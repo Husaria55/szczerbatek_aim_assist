@@ -31,3 +31,21 @@ def rk4_step(
 
     next_state = state + (dt / 6) * (k1 + 2 * k2 + 2 * k3 + k4)
     return next_state
+
+
+def simulate_drop(
+    initial_state: np.ndarray, mass: float, cd: float, area: float, dt: float = 0.01
+) -> tuple[list[float], list[np.ndarray]]:
+    time_history = []
+    state_history = []
+
+    current_time = 0.0
+    current_state = initial_state
+
+    while current_state[2] > 0:
+        state_history.append(current_state)
+        time_history.append(current_time)
+        current_state = rk4_step(current_time, dt, current_state, mass, cd, area)
+        current_time += dt
+
+    return time_history, state_history
