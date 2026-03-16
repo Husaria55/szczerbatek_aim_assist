@@ -19,3 +19,15 @@ def calculate_state_derivative(
     a_vector = (drag_vector / mass) + GRAVITY_VECTOR
 
     return np.concatenate([v_payload, a_vector])
+
+
+def rk4_step(
+    t: float, dt: float, state: np.ndarray, mass: float, cd: float, area: float
+) -> np.ndarray:
+    k1 = calculate_state_derivative(t, state, mass, cd, area)
+    k2 = calculate_state_derivative(t + dt / 2, state + k1 * (dt / 2), mass, cd, area)
+    k3 = calculate_state_derivative(t + dt / 2, state + k2 * (dt / 2), mass, cd, area)
+    k4 = calculate_state_derivative(t + dt, state + k3 * dt, mass, cd, area)
+
+    next_state = state + (dt / 6) * (k1 + 2 * k2 + 2 * k3 + k4)
+    return next_state
