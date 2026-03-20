@@ -79,3 +79,27 @@ def simulate_drop(
         current_time += dt
 
     return np.array(time_history), np.array(state_history)
+
+
+class DropSolver:
+    def __init__(self, mass: float, cd: float, area: float) -> None:
+        self.mass = mass
+        self.area = area
+        self.cd = cd
+
+    def calculate_release_point(
+        self,
+        target_position: np.ndarray,
+        approach_altitude: float,
+        approach_velocity: np.ndarray,
+        env: SimulationEnvironment | None = None,
+    ) -> np.ndarray:
+        initial_state = np.concatenate(
+            np.array([0.0, 0.0, approach_altitude]), approach_velocity
+        )
+        times, positions = simulate_drop(
+            initial_state, self.mass, self.cd, self.area, env=env
+        )
+        displacement = positions[-1, :2]
+        drop_position = target_position - displacement
+        return drop_position
