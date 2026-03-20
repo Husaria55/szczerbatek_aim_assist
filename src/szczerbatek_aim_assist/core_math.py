@@ -95,11 +95,11 @@ class DropSolver:
         env: SimulationEnvironment | None = None,
     ) -> np.ndarray:
         initial_state = np.concatenate(
-            np.array([0.0, 0.0, approach_altitude]), approach_velocity
+            [np.array([0.0, 0.0, approach_altitude]), approach_velocity]
         )
         times, positions = simulate_drop(
             initial_state, self.mass, self.cd, self.area, env=env
         )
         displacement = positions[-1, :2]
-        drop_position = target_position - displacement
+        drop_position = target_position[:2] - displacement
         return drop_position
