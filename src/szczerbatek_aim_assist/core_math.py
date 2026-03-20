@@ -5,9 +5,10 @@ from dataclasses import dataclass, field
 @dataclass
 class SimulationEnvironment:
     # constants
-    AIR_DENSITY: float = 1.225
-    GRAVITY_VECTOR: np.ndarray = field(default_factory=lambda: np.array([0, 0, -9.81]))
-    WIND_VECTOR: np.ndarray = field(default_factory=lambda: np.array([0, 0, 0]))
+    air_density: float = 1.225
+    gravity_vector: np.ndarray = field(default_factory=lambda: np.array([0, 0, -9.81]))
+    wind_vector: np.ndarray = field(default_factory=lambda: np.array([0, 0, 0]))
+    target_elevation: float = 0.0
 
 
 def calculate_state_derivative(
@@ -16,15 +17,17 @@ def calculate_state_derivative(
     mass: float,
     cd: float,
     area: float,
-    env: SimulationEnvironment = SimulationEnvironment(),
+    env: SimulationEnvironment | None = None,
 ) -> np.ndarray:
+    if env is None:
+        env = SimulationEnvironment()
     # state
     v_payload = state[3:]
-    v_relative = v_payload - env.WIND_VECTOR
+    v_relative = v_payload - env.wind_vector
     v_rel_magnitude = np.linalg.norm(v_relative)
-    drag_vector = -0.5 * env.AIR_DENSITY * cd * area * v_rel_magnitude * v_relative
+    drag_vector = -0.5 * env.air_density * cd * area * v_rel_magnitude * v_relative
 
-    a_vector = (drag_vector / mass) + env.GRAVITY_VECTOR
+    a_vector = (drag_vector / mass) + env.gravity_vector
 
     return np.concatenate([v_payload, a_vector])
 
@@ -36,8 +39,10 @@ def rk4_step(
     mass: float,
     cd: float,
     area: float,
-    env: SimulationEnvironment = SimulationEnvironment(),
+    env: SimulationEnvironment | None = None,
 ) -> np.ndarray:
+    if env is None:
+        env = SimulationEnvironment()
     k1 = calculate_state_derivative(t, state, mass, cd, area, env)
     k2 = calculate_state_derivative(
         t + dt / 2, state + k1 * (dt / 2), mass, cd, area, env
@@ -57,18 +62,20 @@ def simulate_drop(
     cd: float,
     area: float,
     dt: float = 0.01,
-    env: SimulationEnvironment = SimulationEnvironment(),
-) -> tuple[list[float], list[np.ndarray]]:
+    env: SimulationEnvironment | None = None,
+) -> tuple[np.ndarray, np.ndarray]:
+    if env is None:
+        env = SimulationEnvironment()
     time_history = []
     state_history = []
 
     current_time = 0.0
     current_state = initial_state
 
-    while current_state[2] > 0:
+    while current_state[2] > env.target_elevation:
         state_history.append(current_state)
         time_history.append(current_time)
         current_state = rk4_step(current_time, dt, current_state, mass, cd, area, env)
         current_time += dt
 
-    return time_history, state_history
+    return np.array(time_history), np.array(state_history)
