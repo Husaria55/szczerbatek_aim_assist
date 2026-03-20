@@ -1,39 +1,63 @@
 import numpy as np
+from dataclasses import dataclass, field
 
-# constants
-AIR_DENSITY = 1.225
-GRAVITY_VECTOR = np.array([0, 0, -9.81])
-WIND_VECTOR = np.array([0, 0, 0])
+
+@dataclass
+class SimulationEnvironment:
+    # constants
+    AIR_DENSITY: float = 1.225
+    GRAVITY_VECTOR: np.ndarray = field(default_factory=lambda: np.array([0, 0, -9.81]))
+    WIND_VECTOR: np.ndarray = field(default_factory=lambda: np.array([0, 0, 0]))
 
 
 def calculate_state_derivative(
-    t: float, state: np.ndarray, mass: float, cd: float, area: float
+    t: float,
+    state: np.ndarray,
+    mass: float,
+    cd: float,
+    area: float,
+    env: SimulationEnvironment = SimulationEnvironment(),
 ) -> np.ndarray:
     # state
     v_payload = state[3:]
-    v_relative = v_payload - WIND_VECTOR
+    v_relative = v_payload - env.WIND_VECTOR
     v_rel_magnitude = np.linalg.norm(v_relative)
-    drag_vector = -0.5 * AIR_DENSITY * cd * area * v_rel_magnitude * v_relative
+    drag_vector = -0.5 * env.AIR_DENSITY * cd * area * v_rel_magnitude * v_relative
 
-    a_vector = (drag_vector / mass) + GRAVITY_VECTOR
+    a_vector = (drag_vector / mass) + env.GRAVITY_VECTOR
 
     return np.concatenate([v_payload, a_vector])
 
 
 def rk4_step(
-    t: float, dt: float, state: np.ndarray, mass: float, cd: float, area: float
+    t: float,
+    dt: float,
+    state: np.ndarray,
+    mass: float,
+    cd: float,
+    area: float,
+    env: SimulationEnvironment = SimulationEnvironment(),
 ) -> np.ndarray:
-    k1 = calculate_state_derivative(t, state, mass, cd, area)
-    k2 = calculate_state_derivative(t + dt / 2, state + k1 * (dt / 2), mass, cd, area)
-    k3 = calculate_state_derivative(t + dt / 2, state + k2 * (dt / 2), mass, cd, area)
-    k4 = calculate_state_derivative(t + dt, state + k3 * dt, mass, cd, area)
+    k1 = calculate_state_derivative(t, state, mass, cd, area, env)
+    k2 = calculate_state_derivative(
+        t + dt / 2, state + k1 * (dt / 2), mass, cd, area, env
+    )
+    k3 = calculate_state_derivative(
+        t + dt / 2, state + k2 * (dt / 2), mass, cd, area, env
+    )
+    k4 = calculate_state_derivative(t + dt, state + k3 * dt, mass, cd, area, env)
 
     next_state = state + (dt / 6) * (k1 + 2 * k2 + 2 * k3 + k4)
     return next_state
 
 
 def simulate_drop(
-    initial_state: np.ndarray, mass: float, cd: float, area: float, dt: float = 0.01
+    initial_state: np.ndarray,
+    mass: float,
+    cd: float,
+    area: float,
+    dt: float = 0.01,
+    env: SimulationEnvironment = SimulationEnvironment(),
 ) -> tuple[list[float], list[np.ndarray]]:
     time_history = []
     state_history = []
@@ -44,7 +68,7 @@ def simulate_drop(
     while current_state[2] > 0:
         state_history.append(current_state)
         time_history.append(current_time)
-        current_state = rk4_step(current_time, dt, current_state, mass, cd, area)
+        current_state = rk4_step(current_time, dt, current_state, mass, cd, area, env)
         current_time += dt
 
     return time_history, state_history
