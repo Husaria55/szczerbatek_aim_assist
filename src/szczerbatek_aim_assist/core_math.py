@@ -1,5 +1,5 @@
 from typing import Callable
-
+from scipy.optimize import minimize
 import numpy as np
 from dataclasses import dataclass, field
 
@@ -130,3 +130,50 @@ class DropSolver:
         displacement = positions[-1, :2]
         drop_position = target_position[:2] - displacement
         return drop_position
+
+
+class ShootingSolver:
+    def __init__(self, mass: float, cd: float, area: float) -> None:
+        self.mass = mass
+        self.area = area
+        self.cd = cd
+
+    def _objective_function(
+        self,
+        guess_xy: np.ndarray,
+        target_position: np.ndarray,
+        approach_altitude: float,
+        approach_velocity: np.ndarray,
+        env: SimulationEnvironment | None = None,
+    ):
+        inital_state = np.concatenate(
+            [guess_xy, [approach_altitude], approach_velocity]
+        )
+        times, positions = simulate_drop(
+            inital_state, self.mass, self.cd, self.area, env=env
+        )
+        final_position = positions[-1, :3]
+        return np.linalg.norm(final_position - target_position)
+
+    def calculate_release_point(
+        self,
+        target_position: np.ndarray,
+        approach_altitude: float,
+        approach_velocity: np.ndarray,
+        env: SimulationEnvironment | None = None,
+    ) -> np.ndarray:
+        if env is None:
+            env = SimulationEnvironment()
+        time_to_fall = np.sqrt(2 * approach_altitude / -env.gravity_vector[2])
+        initial_guess = target_position[:2] - approach_velocity[:2] * time_to_fall
+        result = minimize(
+            fun=self._objective_function,
+            x0=initial_guess,
+            args=(target_position, approach_altitude, approach_velocity, env),
+            method="Nelder-Mead",
+            tol=0.1,
+        )
+        if not result.success:
+            print("Optimization failed:", result.message)
+
+        return result.x

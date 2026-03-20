@@ -55,3 +55,18 @@ plt.title("Release Point and Target Location")
 plt.legend()
 plt.grid()
 plt.show()
+
+
+result = rk.ShootingSolver(mass, cd, area).calculate_release_point(
+    target_position, approach_altitude, velocity_vector, env
+)
+# visualization of shooting solver result
+plt.figure()
+plt.plot(target_position[0], target_position[1], "ro", label="Target")
+plt.plot(result[0], result[1], "go", label="Shooting Solver Release Point")
+plt.xlabel("X Position (m)")
+plt.ylabel("Y Position (m)")
+plt.title("Shooting Solver Release Point and Target Location")
+plt.legend()
+plt.grid()
+plt.show()
