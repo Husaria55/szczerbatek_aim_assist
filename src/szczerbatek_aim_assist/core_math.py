@@ -10,8 +10,7 @@ def calculate_state_derivative(
     t: float, state: np.ndarray, mass: float, cd: float, area: float
 ) -> np.ndarray:
     # state
-    x, y, z, v_x, v_y, v_z = state
-    v_payload = np.array([v_x, v_y, v_z])
+    v_payload = state[3:]
     v_relative = v_payload - WIND_VECTOR
     v_rel_magnitude = np.linalg.norm(v_relative)
     drag_vector = -0.5 * AIR_DENSITY * cd * area * v_rel_magnitude * v_relative
