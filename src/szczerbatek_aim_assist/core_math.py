@@ -27,11 +27,13 @@ def create_constant_wind(
 def create_shear_wind(
     base_wind_vector: np.ndarray, shear_exponent: float
 ) -> Callable[[np.ndarray, float], np.ndarray]:
+    """Wind model where wind speed increases with altitude following a power law. The base_wind_vector is the wind at 10m altitude."""
+
     def shear_wind(position: np.ndarray, time: float) -> np.ndarray:
         height = position[2]
         if height < 0:
             height = 0
-        return base_wind_vector * (height**shear_exponent)
+        return base_wind_vector * ((height / 10.0) ** shear_exponent)
 
     return shear_wind
 
