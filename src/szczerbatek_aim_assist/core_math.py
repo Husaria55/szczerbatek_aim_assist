@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 
 @dataclass
 class SimulationEnvironment:
-    # constants
+    # env variables, wind as can be passed as a function
     air_density: float = 1.225
     gravity_vector: np.ndarray = field(default_factory=lambda: np.array([0, 0, -9.81]))
     target_elevation: float = 0.0
@@ -18,6 +18,8 @@ class SimulationEnvironment:
 def create_constant_wind(
     wind_vector: np.ndarray,
 ) -> Callable[[np.ndarray, float], np.ndarray]:
+    """Constant wind model for env"""
+
     def constant_wind(position: np.ndarray, time: float) -> np.ndarray:
         return wind_vector
 
@@ -48,7 +50,7 @@ def calculate_state_derivative(
 ) -> np.ndarray:
     if env is None:
         env = SimulationEnvironment()
-    # state
+
     v_payload = state[3:]
     v_relative = v_payload - env.wind_model(state[:3], t)
     v_rel_magnitude = np.linalg.norm(v_relative)
@@ -121,6 +123,7 @@ class DropSolver:
         approach_velocity: np.ndarray,
         env: SimulationEnvironment | None = None,
     ) -> np.ndarray:
+        """Using simple displacement if wind doesn't change with x,y this should work fine"""
         initial_state = np.concatenate(
             [np.array([0.0, 0.0, approach_altitude]), approach_velocity]
         )
@@ -162,6 +165,7 @@ class ShootingSolver:
         approach_velocity: np.ndarray,
         env: SimulationEnvironment | None = None,
     ) -> np.ndarray:
+        """finding the good spot by minimizing the error"""
         if env is None:
             env = SimulationEnvironment()
         time_to_fall = np.sqrt(2 * approach_altitude / -env.gravity_vector[2])

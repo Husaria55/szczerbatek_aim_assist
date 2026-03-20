@@ -2,7 +2,7 @@ import numpy as np
 import szczerbatek_aim_assist.core_math as rk
 import matplotlib.pyplot as plt
 
-# input
+# input (not valid)
 mass = 0.2
 cd = 0.5
 area = 0.03
@@ -35,7 +35,7 @@ plt.show()
 
 
 # example finding release point for a target at (100, 0, 0)
-# wirh non zero wind
+# with non-zero wind
 
 target_position = np.array([100.0, 100.0, 0.0])
 solver = rk.DropSolver(mass, cd, area)
@@ -45,7 +45,7 @@ release_point = solver.calculate_release_point(
     target_position, approach_altitude, velocity_vector, env
 )
 print(f"Release point for target at {target_position}: {release_point}")
-# wisualkization of release point and target
+# visualization of release point and target
 plt.figure()
 plt.plot(target_position[0], target_position[1], "ro", label="Target")
 plt.plot(release_point[0], release_point[1], "go", label="Release Point")
@@ -60,7 +60,7 @@ plt.show()
 result = rk.ShootingSolver(mass, cd, area).calculate_release_point(
     target_position, approach_altitude, velocity_vector, env
 )
-# visualization of shooting solver result
+# visualization of shooting solver result for the same inputs
 plt.figure()
 plt.plot(target_position[0], target_position[1], "ro", label="Target")
 plt.plot(result[0], result[1], "go", label="Shooting Solver Release Point")
