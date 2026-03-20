@@ -3,14 +3,14 @@ import szczerbatek_aim_assist.core_math as rk
 import matplotlib.pyplot as plt
 
 # input
-mass = 2.0
-cd = 0.45
+mass = 0.2
+cd = 0.5
 area = 0.03
 z = 50
 v_x = 25
 x = 0
 y = 0
-env = rk.SimulationEnvironment(wind_vector=np.array([10.0, 20.0, 0.0]))
+env = rk.SimulationEnvironment(wind_vector=np.array([0.0, 10.0, 0.0]))
 initial_state = np.array([0.0, 0.0, 50.0, 25.0, 0.0, 0.0])
 
 times, states = rk.simulate_drop(initial_state, mass, cd, area, env=env)
@@ -35,7 +35,7 @@ plt.show()
 # example finding release point for a target at (100, 0, 0)
 # wirh non zero wind
 
-target_position = np.array([100.0, 0.0, 0.0])
+target_position = np.array([100.0, 100.0, 0.0])
 solver = rk.DropSolver(mass, cd, area)
 approach_altitude = 50.0
 velocity_vector = np.array([25.0, 0.0, 0.0])

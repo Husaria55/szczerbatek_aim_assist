@@ -1,3 +1,5 @@
+from typing import Callable
+
 import numpy as np
 from dataclasses import dataclass, field
 
@@ -7,8 +9,31 @@ class SimulationEnvironment:
     # constants
     air_density: float = 1.225
     gravity_vector: np.ndarray = field(default_factory=lambda: np.array([0, 0, -9.81]))
-    wind_vector: np.ndarray = field(default_factory=lambda: np.array([0, 0, 0]))
     target_elevation: float = 0.0
+    wind_model: Callable[[np.ndarray, float], np.ndarray] = field(
+        default_factory=lambda: create_constant_wind(np.array([0.0, 0.0, 0.0]))
+    )
+
+
+def create_constant_wind(
+    wind_vector: np.ndarray,
+) -> Callable[[np.ndarray, float], np.ndarray]:
+    def constant_wind(position: np.ndarray, time: float) -> np.ndarray:
+        return wind_vector
+
+    return constant_wind
+
+
+def create_shear_wind(
+    base_wind_vector: np.ndarray, shear_exponent: float
+) -> Callable[[np.ndarray, float], np.ndarray]:
+    def shear_wind(position: np.ndarray, time: float) -> np.ndarray:
+        height = position[2]
+        if height < 0:
+            height = 0
+        return base_wind_vector * (height**shear_exponent)
+
+    return shear_wind
 
 
 def calculate_state_derivative(
@@ -23,7 +48,7 @@ def calculate_state_derivative(
         env = SimulationEnvironment()
     # state
     v_payload = state[3:]
-    v_relative = v_payload - env.wind_vector
+    v_relative = v_payload - env.wind_model(state[:3], t)
     v_rel_magnitude = np.linalg.norm(v_relative)
     drag_vector = -0.5 * env.air_density * cd * area * v_rel_magnitude * v_relative
 
