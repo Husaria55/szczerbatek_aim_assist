@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+
 from szczerbatek_aim_assist.core_math import DropSolver, SimulationEnvironment
 
 env = SimulationEnvironment(wind_model=lambda pos, t: np.array([5.0, 0.0, 0.0]))

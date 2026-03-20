@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+
 from szczerbatek_aim_assist.core_math import DropSolver
 
 

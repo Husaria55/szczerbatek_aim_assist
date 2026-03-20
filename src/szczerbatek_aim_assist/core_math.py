@@ -1,7 +1,8 @@
-from typing import Callable
-from scipy.optimize import minimize
-import numpy as np
 from dataclasses import dataclass, field
+from typing import Callable
+
+import numpy as np
+from scipy.optimize import minimize
 
 
 @dataclass

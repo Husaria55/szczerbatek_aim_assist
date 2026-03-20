@@ -1,6 +1,7 @@
-import numpy as np
-import szczerbatek_aim_assist.core_math as rk
 import matplotlib.pyplot as plt
+import numpy as np
+
+import szczerbatek_aim_assist.core_math as rk
 
 # input (not valid)
 mass = 0.2
