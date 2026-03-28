@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-import payload_trajectory_solver.core_math as rk
+import szczerbatek_aim_assist.core_math as rk
 
 # cd, are guesses
 mass = 0.158  # kg
