@@ -1,73 +1,102 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-import szczerbatek_aim_assist.core_math as rk
+import payload_trajectory_solver.core_math as rk
 
-# input (not valid)
-mass = 0.2
-cd = 0.5
-area = 0.03
-z = 50
-v_x = 25
-x = 0
-y = 0
+# cd, are guesses
+mass = 0.158  # kg
+cd_payload = 1.0
+area_payload = 0.0104
+cd_parachute = 0.8
+area_parachute = 0.159
+deploy_time = 1.5
+opening_duration = 0.5
+
+drag_area_func = rk.create_drag_area_model(
+    cd_payload,
+    area_payload,
+    cd_parachute,
+    area_parachute,
+    deploy_time,
+    opening_duration,
+)
+
 env = rk.SimulationEnvironment(
     wind_model=rk.create_shear_wind(np.array([5.0, 5.0, 0.0]), 1 / 7)
 )
-initial_state = np.array([0.0, 0.0, 50.0, 55.0, 0.0, 0.0])
 
-times, states = rk.simulate_drop(initial_state, mass, cd, area, env=env)
+# env = rk.SimulationEnvironment(
+#     wind_model=rk.create_logarithmic_wind(np.array([5.0, 5.0, 0.0]), 60, 0.03)
+# )
 
-print(states[-1])
-print(times[-1])
+initial_state = np.array([0.0, 0.0, 60.0, 23.0, 0.0, 0.0])
+times, states = rk.simulate_drop(initial_state, mass, drag_area_func, dt=0.01, env=env)
 
-# plotting 3D trajectory
-x_vals = [state[0] for state in states]
-y_vals = [state[1] for state in states]
-z_vals = [state[2] for state in states]
+print(f"Final State (Landing): {states[-1]}")
+print(f"Time to land: {times[-1]:.2f} seconds")
+
+# Plotting 3D trajectory
 fig = plt.figure()
 ax = fig.add_subplot(111, projection="3d")
-ax.plot(x_vals, y_vals, z_vals)
+ax.plot(states[:, 0], states[:, 1], states[:, 2], color="b", label="Payload Path")
 ax.set_xlabel("X Position (m)")
 ax.set_ylabel("Y Position (m)")
 ax.set_zlabel("Z Position (m)")
-ax.set_title("3D Trajectory of Dropped Object")
+ax.set_title("3D Trajectory of Dropped Object with Parachute")
+ax.legend()
 plt.show()
 
 
-# example finding release point for a target at (100, 0, 0)
-# with non-zero wind
+# finding release point
+target_position = np.array([0.0, 0.0, 0.0])
+approach_altitude = 60.0
+velocity_vector = np.array([23.0, 0.0, 0.0])
 
-target_position = np.array([100.0, 100.0, 0.0])
-solver = rk.DropSolver(mass, cd, area)
-approach_altitude = 50.0
-velocity_vector = np.array([55.0, 0.0, 0.0])
+solver = rk.ShootingSolver(mass, drag_area_func, release_latency=0.5)
+
 release_point = solver.calculate_release_point(
     target_position, approach_altitude, velocity_vector, env
 )
-print(f"Release point for target at {target_position}: {release_point}")
-# visualization of release point and target
+
+print(f"Optimal command coordinate for target at {target_position}: {release_point}")
+
 plt.figure()
-plt.plot(target_position[0], target_position[1], "ro", label="Target")
-plt.plot(release_point[0], release_point[1], "go", label="Release Point")
-plt.xlabel("X Position (m)")
-plt.ylabel("Y Position (m)")
-plt.title("Release Point and Target Location")
-plt.legend()
-plt.grid()
-plt.show()
-
-
-result = rk.ShootingSolver(mass, cd, area).calculate_release_point(
-    target_position, approach_altitude, velocity_vector, env
+plt.plot(target_position[0], target_position[1], "ro", markersize=8, label="Target")
+plt.plot(
+    release_point[0],
+    release_point[1],
+    "go",
+    markersize=8,
+    label="Optimal Drop Command Point",
 )
-# visualization of shooting solver result for the same inputs
-plt.figure()
-plt.plot(target_position[0], target_position[1], "ro", label="Target")
-plt.plot(result[0], result[1], "go", label="Shooting Solver Release Point")
+
+# taking delay into account
+actual_physical_drop_point = release_point + (
+    velocity_vector[:2] * solver.release_latency
+)
+plt.plot(
+    actual_physical_drop_point[0],
+    actual_physical_drop_point[1],
+    "mo",
+    markersize=6,
+    label="Actual Physical Drop Point",
+)
+
+# Run the simulation from the physical drop point
+optimal_initial_state = np.concatenate(
+    [actual_physical_drop_point, [approach_altitude], velocity_vector]
+)
+_, check_states = rk.simulate_drop(
+    optimal_initial_state, mass, drag_area_func, dt=0.01, env=env
+)
+
+# Plot the payload's path over the ground
+plt.plot(check_states[:, 0], check_states[:, 1], "b--", label="Payload Ground Track")
+
 plt.xlabel("X Position (m)")
 plt.ylabel("Y Position (m)")
-plt.title("Shooting Solver Release Point and Target Location")
+plt.title("Shooting Solver Result & Trajectory Verification")
 plt.legend()
-plt.grid()
+plt.grid(True)
+plt.axis("equal")  # Ensures the X and Y axes have the same scale
 plt.show()
